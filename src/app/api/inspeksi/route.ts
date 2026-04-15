@@ -5,7 +5,7 @@ const config = {
   server: process.env.AZURE_SQL_SERVER || '',
   database: process.env.AZURE_SQL_DATABASE || '',
   authentication: {
-    type: 'default',
+    type: 'default' as const,
     options: {
       userName: process.env.AZURE_SQL_USER || '',
       password: process.env.AZURE_SQL_PASSWORD || '',
@@ -24,19 +24,19 @@ export async function POST(request: NextRequest) {
   
   try {
     const formData = await request.formData();
+    const email = formData.get('email') as string;
+    const namaPenginspeksi = formData.get('namaPenginspeksi') as string;
     const lokasi = formData.get('lokasi') as string;
     const tanggal = formData.get('tanggal') as string;
     const penginspeksi = formData.get('penginspeksi') as string;
     const kategori = formData.get('kategori') as string;
     const deskripsi = formData.get('deskripsi') as string;
-    const userEmail = formData.get('userEmail') as string;
-    const userName  = formData.get('userName') as string;
     const files = formData.getAll('fotos') as File[];
 
     // Validate input
-    if (!lokasi || !tanggal || !penginspeksi || !kategori) {
+    if (!email || !namaPenginspeksi || !lokasi || !tanggal || !penginspeksi || !kategori) {
       return NextResponse.json(
-        { error: 'Data tidak lengkap: lokasi, tanggal, penginspeksi, dan kategori harus diisi' },
+        { error: 'Data tidak lengkap: email, nama, lokasi, tanggal, penginspeksi, dan kategori harus diisi' },
         { status: 400 }
       );
     }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     console.log('Server:', process.env.AZURE_SQL_SERVER);
     console.log('Database:', process.env.AZURE_SQL_DATABASE);
     console.log('Files received:', files.length);
-    console.log('User:', userEmail);
+    console.log('Submitter:', namaPenginspeksi, '(' + email + ')');
 
     await pool.connect();
     console.log('✅ Connected to Azure SQL successfully!');
@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
       .input('penginspeksi', sql.VarChar, penginspeksi)
       .input('kategori', sql.VarChar, kategori)
       .input('deskripsi', sql.VarChar, deskripsi || '')
-      .input('userEmail', sql.VarChar, userEmail)
-      .input('userName', sql.VarChar, userName)
+      .input('userEmail', sql.VarChar, email)
+      .input('userName', sql.VarChar, namaPenginspeksi)
       .input('createdAt', sql.DateTime, new Date())
       .query(`
         INSERT INTO inspeksi_lapangan 

@@ -5,7 +5,7 @@ const config = {
   server: process.env.AZURE_SQL_SERVER || '',
   database: process.env.AZURE_SQL_DATABASE || '',
   authentication: {
-    type: 'default',
+    type: 'default' as const,
     options: {
       userName: process.env.AZURE_SQL_USER || '',
       password: process.env.AZURE_SQL_PASSWORD || '',
@@ -21,12 +21,12 @@ const config = {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { fotoId: string } }
+  { params }: { params: Promise<{ fotoId: string }> }
 ) {
   const pool = new sql.ConnectionPool(config);
 
   try {
-    const fotoId = params.fotoId;
+    const { fotoId } = await params;
 
     await pool.connect();
 
@@ -49,7 +49,7 @@ export async function GET(
     const foto = result.recordset[0];
     const buffer = foto.foto_data as Buffer;
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': foto.foto_tipe || 'image/jpeg',
         'Content-Disposition': `inline; filename="${foto.foto_nama}"`,

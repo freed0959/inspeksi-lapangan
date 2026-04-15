@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Image from "next/image";
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [formData, setFormData] = useState({
+    email: '',
+    namaPenginspeksi: '',
     lokasi: '',
     tanggal: '',
     penginspeksi: '',
@@ -20,28 +18,6 @@ export default function Home() {
   });
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotoPreview, setFotoPreview] = useState<string[]>([]);
-
-  // Redirect ke login jika user belum login
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700 mx-auto mb-4"></div>
-          <p className="text-gray-700 dark:text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!session) {
-    return null;
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -83,13 +59,13 @@ export default function Home() {
 
     try {
       const formDataToSend = new FormData();
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('namaPenginspeksi', formData.namaPenginspeksi);
       formDataToSend.append('lokasi', formData.lokasi);
       formDataToSend.append('tanggal', formData.tanggal);
       formDataToSend.append('penginspeksi', formData.penginspeksi);
       formDataToSend.append('kategori', formData.kategori);
       formDataToSend.append('deskripsi', formData.deskripsi);
-      formDataToSend.append('userEmail', session.user?.email || '');
-      formDataToSend.append('userName', session.user?.name || '');
 
       // Add all photos
       fotos.forEach(foto => {
@@ -106,7 +82,7 @@ export default function Home() {
       if (response.ok) {
         const message = `Data inspeksi berhasil disimpan! ${data.fotosInserted > 0 ? `${data.fotosInserted} foto berhasil diunggah.` : 'Tidak ada foto yang diunggah.'}`;
         setMessage({ type: 'success', text: message });
-        setFormData({ lokasi: '', tanggal: '', penginspeksi: '', kategori: '', deskripsi: '' });
+        setFormData({ email: '', namaPenginspeksi: '', lokasi: '', tanggal: '', penginspeksi: '', kategori: '', deskripsi: '' });
         setFotos([]);
         setFotoPreview([]);
         setTimeout(() => setShowForm(false), 2000);
@@ -124,33 +100,13 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-slate-800 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-700 dark:text-gray-300">
-              🏭 Inspeksi Lapangan v0
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-              Aplikasi inspeksi lapangan responsif untuk HP dan laptop
-            </p>
-          </div>
-          
-          {/* User Info & Logout */}
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                {session.user?.name}
-              </p>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {session.user?.email}
-              </p>
-            </div>
-            <button
-              onClick={() => signOut()}
-              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors text-sm"
-            >
-              Logout
-            </button>
-          </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-700 dark:text-gray-300">
+            🏭 Inspeksi Lapangan v0
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
+            Aplikasi inspeksi lapangan responsif untuk HP dan laptop
+          </p>
         </div>
       </header>
 
@@ -249,6 +205,38 @@ export default function Home() {
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Email Anda *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Masukkan email Anda"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent dark:bg-slate-600 dark:text-white outline-none transition"
+                    required
+                  />
+                </div>
+
+                {/* Nama Penginspeksi */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Nama Anda *
+                  </label>
+                  <input
+                    type="text"
+                    name="namaPenginspeksi"
+                    value={formData.namaPenginspeksi}
+                    onChange={handleInputChange}
+                    placeholder="Masukkan nama Anda"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-transparent dark:bg-slate-600 dark:text-white outline-none transition"
+                    required
+                  />
+                </div>
+
                 {/* Lokasi */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
